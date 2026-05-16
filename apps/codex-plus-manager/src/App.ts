@@ -405,8 +405,8 @@ export function mountApp(root: HTMLElement) {
         <span class="muted">安装器迁移前返回真实 stub 状态</span>
       </div>
       <div class="grid two">
-        ${statusPanel("静默启动入口", state.overview?.silent_shortcut.status, state.overview?.silent_shortcut.path)}
-        ${statusPanel("管理控制台入口", state.overview?.management_shortcut.status, state.overview?.management_shortcut.path)}
+        ${inlineStatusBlock("静默启动入口", state.overview?.silent_shortcut.status, state.overview?.silent_shortcut.path)}
+        ${inlineStatusBlock("管理控制台入口", state.overview?.management_shortcut.status, state.overview?.management_shortcut.path)}
       </div>
       <label class="check-row">
         <input data-field="removeOwnedData" type="checkbox" ${state.removeOwnedData ? "checked" : ""} />
@@ -572,6 +572,18 @@ export function mountApp(root: HTMLElement) {
 function statusPanel(title: string, status = "unknown", path?: string | null) {
   return `
     <div class="panel compact">
+      <div class="status-line">
+        <span>${escapeHtml(title)}</span>
+        <strong class="${statusClass(status)}">${statusLabel(status)}</strong>
+      </div>
+      <div class="path-line">${escapeHtml(path || "未记录路径")}</div>
+    </div>
+  `;
+}
+
+function inlineStatusBlock(title: string, status = "unknown", path?: string | null) {
+  return `
+    <div class="status-block">
       <div class="status-line">
         <span>${escapeHtml(title)}</span>
         <strong class="${statusClass(status)}">${statusLabel(status)}</strong>

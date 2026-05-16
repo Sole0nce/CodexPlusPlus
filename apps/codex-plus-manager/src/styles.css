@@ -228,6 +228,14 @@ textarea {
   min-height: calc(100vh - 156px);
 }
 
+.status-block {
+  min-height: 76px;
+  border: 1px solid #dde2ea;
+  border-radius: 6px;
+  background: #f8fafc;
+  padding: 12px;
+}
+
 .panel-head {
   display: flex;
   align-items: baseline;

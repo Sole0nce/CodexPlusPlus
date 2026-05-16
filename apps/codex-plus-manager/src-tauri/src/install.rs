@@ -36,19 +36,26 @@ impl ShortcutState {
             path: path.map(|path| path.to_string_lossy().to_string()),
         }
     }
+
+    fn from_candidates(candidates: Vec<PathBuf>) -> Self {
+        if let Some(path) = candidates.iter().find(|path| path.exists()) {
+            return Self {
+                installed: true,
+                path: Some(path.to_string_lossy().to_string()),
+            };
+        }
+        Self::missing(candidates.into_iter().next())
+    }
 }
 
 pub fn inspect_entrypoints() -> EntryPointState {
     let desktop = desktop_dir();
     EntryPointState {
-        silent_shortcut: ShortcutState::missing(
-            desktop.as_ref().map(|path| path.join("Codex++.lnk")),
-        ),
-        management_shortcut: ShortcutState::missing(
-            desktop
-                .as_ref()
-                .map(|path| path.join("Codex++ Manager.lnk")),
-        ),
+        silent_shortcut: ShortcutState::from_candidates(shortcut_candidates(&desktop, "Codex++")),
+        management_shortcut: ShortcutState::from_candidates(shortcut_candidates(
+            &desktop,
+            "Codex++ 管理工具",
+        )),
     }
 }
 
@@ -90,6 +97,19 @@ fn desktop_dir() -> Option<PathBuf> {
     directories::UserDirs::new().and_then(|dirs| dirs.desktop_dir().map(PathBuf::from))
 }
 
+fn shortcut_candidates(desktop: &Option<PathBuf>, name: &str) -> Vec<PathBuf> {
+    let Some(desktop) = desktop else {
+        return Vec::new();
+    };
+    if cfg!(windows) {
+        vec![desktop.join(format!("{name}.lnk"))]
+    } else if cfg!(target_os = "macos") {
+        vec![desktop.join(format!("{name}.app"))]
+    } else {
+        vec![desktop.join(format!("{name}.desktop"))]
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -101,6 +121,24 @@ mod tests {
         assert_eq!(result.status, "not_implemented");
         assert!(!result.silent_shortcut.installed);
         assert!(!result.management_shortcut.installed);
+    }
+
+    #[test]
+    fn shortcut_state_detects_existing_candidate() {
+        let temp = std::env::temp_dir().join(format!(
+            "codex-plus-shortcut-test-{}",
+            std::process::id()
+        ));
+        let _ = std::fs::create_dir_all(&temp);
+        let shortcut = temp.join("Codex++ 管理工具.lnk");
+        std::fs::write(&shortcut, "shortcut").unwrap();
+
+        let state = ShortcutState::from_candidates(vec![shortcut.clone()]);
+
+        assert!(state.installed);
+        assert_eq!(state.path.as_deref(), Some(shortcut.to_string_lossy().as_ref()));
+        let _ = std::fs::remove_file(shortcut);
+        let _ = std::fs::remove_dir(temp);
     }
 
     #[test]
